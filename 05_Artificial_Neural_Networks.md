@@ -1,11 +1,11 @@
 # Lecture 5: Artificial Neural Networks (ANN)
 
 > **Course:** BITS F464 — Machine Learning
-> **Covers:** Biological inspiration, McCulloch-Pitts neuron (+ Boolean gates, geometric interpretation), Perceptron & its learning algorithm, Sigmoid neuron, Multilayer Perceptron (MLP), Feed-Forward Neural Network (pre-activation/activation equations), decision boundaries by depth, activation functions, network training, and **Backpropagation** (the chain rule).
+> **Covers:** Biological inspiration, McCulloch-Pitts neuron (+ Boolean gates, geometry), Perceptron & its learning, Sigmoid neuron, Multilayer Perceptron (MLP), Feed-Forward Neural Network, decision boundaries by depth, activation functions, network training, and **Backpropagation** (the chain rule).
 >
-> **How to read this:** Every formula has a worked numerical example. The single-neuron calculation, AND/OR gate thresholds, the FFNN pre-activation, and backprop chain-rule are the exam-likely problems — all worked end-to-end.
+> **How this chapter is written:** every idea opens with an everyday story, connects it to *why*, then the method/formula with symbols explained in the story's language. All original worked examples kept; important formulas also get an **extra made-up example, fully solved**.
 
-> 📌 *Note:* Some of this lecture (Perceptron, sigmoid, gradient descent) repeats Lecture 4. Those parts are summarized briefly here with cross-references; **see [04_LogisticReg_DecisionTree_Metrics.md](04_LogisticReg_DecisionTree_Metrics.md) Part A** for the full treatment. The **new** material is MP neuron Boolean gates, MLP, FFNN equations, and backpropagation.
+> 📌 *Note:* some of this (Perceptron, sigmoid, gradient descent) repeats Lecture 4. Those parts are brief here with cross-references; see [04_LogisticReg_DecisionTree_Metrics.md](04_LogisticReg_DecisionTree_Metrics.md) Part A for the full treatment. The **new** material is MP-neuron Boolean gates, MLP, FFNN equations, and backprop.
 
 ---
 
@@ -23,20 +23,24 @@
 10. [Activation Functions](#10-activation-functions)
 11. [Training a Neural Network](#11-training-a-neural-network)
 12. [Backpropagation](#12-backpropagation)
-13. [Quick Revision Sheet](#13-quick-revision-sheet)
+13. [The Night-Before Recap](#13-the-night-before-recap)
 
 ---
 
 ## 1. Biological Inspiration
 
-The fundamental unit of an ANN is an **artificial neuron**, inspired by the **biological neuron** in the brain.
+### 🎯 Picture this
+
+A single brain cell (neuron) is like a tiny **decision desk**. Messages arrive on many incoming wires (dendrites), the desk weighs them and decides whether the message is strong enough to **pass it on**, and if so it fires a signal down one outgoing wire (axon) to the next desk. An artificial neuron is a stripped-down copy of this desk.
+
+### 🔗 Why this matters
 
 | Biological part | Job | ANN equivalent |
 |---|---|---|
-| **Dendrite** | Receives inputs from other neurons | Inputs $x_1, x_2, \dots$ |
-| **Synapse** | Connection point to other neurons | Weights $w_1, w_2, \dots$ |
-| **Soma** | Processes the information | The aggregation + activation |
-| **Axon** | Transmits this neuron's output | Output $y$ |
+| **Dendrite** | Receives inputs | Inputs $x_1, x_2, \dots$ |
+| **Synapse** | Connection strength | Weights $w_1, w_2, \dots$ |
+| **Soma** | Processes the info | The aggregation + activation |
+| **Axon** | Transmits the output | Output $y$ |
 
 ```
    Biological:  dendrites → soma → axon → (synapse) → next neuron
@@ -49,18 +53,19 @@ The fundamental unit of an ANN is an **artificial neuron**, inspired by the **bi
 
 ## 2. McCulloch-Pitts (MP) Neuron
 
-The **first computational model of a neuron (1943)** — very simplified.
+### 🎯 Picture this
 
-- **$g$** = aggregates the inputs (just sums them).
-- **$f$** = takes a decision based on that aggregation (threshold).
-- Inputs can be **excitatory** (encourage firing) or **inhibitory** (block firing).
-- **Rule: $y = 0$ if ANY input is inhibitory.** Otherwise:
+A very strict committee that **just counts raised hands** — no member's vote counts more than another's. If at least $\theta$ hands go up, the motion passes (output 1); otherwise it fails (output 0). And there's one veto rule: if *any* member raises an "inhibitory" hand, the motion fails outright no matter what.
 
-$$g(x_1, \dots, x_n) = \sum_{i=1}^{n} x_i$$
-$$y = f(g(\mathbf{x})) = \begin{cases} 1 & \text{if } g(\mathbf{x}) \geq \theta \\ 0 & \text{if } g(\mathbf{x}) < \theta \end{cases}$$
+### 🔗 Why this matters
 
-- **$\theta$ (theta) = the thresholding parameter** (also called **thresholding logic**).
-- Inputs and output are **Boolean** ($\in \{0, 1\}$). **No weights** (that's the perceptron's later upgrade).
+The **first computational model of a neuron (1943)** — deliberately crude.
+
+$$g(x_1, \dots, x_n) = \sum_{i=1}^{n} x_i, \qquad y = \begin{cases} 1 & \text{if } g(\mathbf{x}) \geq \theta \\ 0 & \text{if } g(\mathbf{x}) < \theta \end{cases}$$
+
+- $g$ aggregates (just sums). $f$ decides via threshold $\theta$.
+- Inputs **excitatory** (encourage firing) or **inhibitory** (veto). **$y=0$ if ANY input is inhibitory.**
+- Inputs/output **Boolean** (0/1). **No weights** (that's the perceptron's later upgrade).
 
 ```
    x₁ ─┐
@@ -70,233 +75,283 @@ $$y = f(g(\mathbf{x})) = \begin{cases} 1 & \text{if } g(\mathbf{x}) \geq \theta 
 
 #### 🧠 Worked example
 
-3 inputs $(x_1,x_2,x_3) = (1,1,0)$, threshold $\theta = 2$, none inhibitory:
-$$g = 1+1+0 = 2, \quad 2 \geq 2 \;\Rightarrow\; y = 1.$$
+3 inputs $(1,1,0)$, $\theta = 2$, none inhibitory: $g = 1+1+0 = 2$, $2 \geq 2 \Rightarrow y = 1$.
 If $\theta = 3$: $g = 2 < 3 \Rightarrow y = 0$.
+
+#### ✏️ Practice example (made up — solved)
+
+4 inputs $(1, 0, 1, 1)$, threshold $\theta = 3$, none inhibitory:
+$$g = 1+0+1+1 = 3, \qquad 3 \geq 3 \Rightarrow y = \mathbf{1}$$
+Now the **veto rule**: same inputs, but suppose input 2 is **inhibitory** (even though it's 0, the rule is about the input *being* inhibitory and active). If any inhibitory input fires → $y = \mathbf{0}$ regardless of the sum. This is the hard "any veto kills it" behaviour.
 
 ---
 
 ## 3. Boolean Functions using MP
 
-By choosing the right threshold $\theta$, a single MP neuron implements logic gates. (Assume 3 inputs each 0/1.)
+### 🎯 Picture this
+
+By moving the "how many hands needed" bar, the same committee becomes different logic gates:
+- Set the bar to "**everyone** must agree" → that's an **AND** gate.
+- Set the bar to "**at least one** is enough" → that's an **OR** gate.
+
+### 🔗 Why this matters
+
+(Assume 3 inputs, each 0/1.)
 
 | Gate | Threshold $\theta$ | Fires (y=1) when |
 |---|---|---|
 | **AND** | **3** | ALL three inputs are 1 (sum = 3 ≥ 3) |
 | **OR** | **1** | AT LEAST one input is 1 (sum ≥ 1) |
 
-#### 🧠 Worked example — verify AND gate ($\theta = 3$)
+#### 🧠 Worked example — verify AND ($\theta = 3$)
 
-| $x_1$ | $x_2$ | $x_3$ | sum | sum ≥ 3? | $y$ |
+| $x_1$ | $x_2$ | $x_3$ | sum | ≥3? | $y$ |
 |---|---|---|---|---|---|
 | 1 | 1 | 1 | 3 | yes | **1** ✓ |
 | 1 | 1 | 0 | 2 | no | **0** ✓ |
 | 0 | 0 | 0 | 0 | no | **0** ✓ |
 
-→ Only fires when *all* are on = exactly AND behaviour. ✓
+#### 🧠 Worked example — verify OR ($\theta = 1$)
 
-#### 🧠 Worked example — verify OR gate ($\theta = 1$)
-
-| $x_1$ | $x_2$ | $x_3$ | sum | sum ≥ 1? | $y$ |
+| $x_1$ | $x_2$ | $x_3$ | sum | ≥1? | $y$ |
 |---|---|---|---|---|---|
 | 0 | 0 | 0 | 0 | no | **0** ✓ |
 | 1 | 0 | 0 | 1 | yes | **1** ✓ |
 | 0 | 1 | 1 | 2 | yes | **1** ✓ |
 
-→ Fires when *any* is on = OR behaviour. ✓
+#### ✏️ Practice example (made up — solved)
 
-> 🔑 **Exam tip:** For an $n$-input AND, $\theta = n$. For OR, $\theta = 1$. (You may be asked to design a gate by choosing θ.)
+Design a **2-input AND** gate, then test it. For an $n$-input AND, set $\theta = n$, so here $\theta = 2$.
+
+| $x_1$ | $x_2$ | sum | ≥2? | $y$ | AND correct? |
+|---|---|---|---|---|---|
+| 0 | 0 | 0 | no | 0 | 0 AND 0 = 0 ✓ |
+| 1 | 0 | 1 | no | 0 | 1 AND 0 = 0 ✓ |
+| 0 | 1 | 1 | no | 0 | 0 AND 1 = 0 ✓ |
+| 1 | 1 | 2 | yes | **1** | 1 AND 1 = 1 ✓ |
+
+→ Only fires when *both* are 1 = exactly AND. (For a 2-input OR you'd instead set $\theta = 1$.)
+
+> 🔑 For an $n$-input AND, $\theta = n$. For OR, $\theta = 1$.
 
 ---
 
 ## 4. Geometric Interpretation & Limitation of MP
 
-Think of inputs as **points in space**. The condition $\sum x_i = \theta$ is a **line** (in 2D) or **plane** (in 3D) that splits the space.
+### 🎯 Picture this
+
+Plot the input combinations as dots on graph paper, coloring "output 1" dots black and "output 0" dots white. The condition $\sum x_i = \theta$ is a **straight line**. The neuron works only if you can draw that **one straight line with all black dots on one side and all white dots on the other**. Some patterns make that impossible — no matter how you angle the line.
+
+### 🔗 Why this matters
 
 ```
    OR (θ=1):  x₁+x₂ ≥ 1            AND (θ=2):  x₁+x₂ ≥ 2
-   x₂                              x₂
    1 ●────────● (1,1)→1            1 ○        ● (1,1)→1
      │╲                              │      ╲
-     │ ╲  line x₁+x₂=1               │       ╲ line x₁+x₂=2
    0 ○──╲─────● (1,0)→1            0 ○────────○
-     (0,0)→0    x₁                  (0,0)→0  (1,0)→0  x₁
-   ● = output 1,  ○ = output 0
+     (0,0)→0    x₁                  (0,0)→0  (1,0)→0
 ```
 
-> 🔑 **LIMITATION (very common exam question):** A **single MP neuron can only represent Boolean functions that are LINEARLY SEPARABLE.**
+> 🔑 **LIMITATION:** a **single MP neuron can only represent Boolean functions that are LINEARLY SEPARABLE** (one straight line splits the 1s from the 0s).
 
-**Linearly separable** = there exists a single straight line (or plane/hyperplane) such that all points giving output **1 lie on one side** and all points giving output **0 lie on the other side**.
-
-> ⚠️ AND, OR are linearly separable (one line works). **XOR is NOT** — no single line can separate it. This is the famous limitation that motivated **multilayer** networks (§6).
+> ⚠️ AND, OR are linearly separable (one line works). **XOR is NOT** — its black/white dots are diagonally opposite, so no single line can separate them. This famous limitation motivated **multilayer** networks (§6).
 
 ---
 
 ## 5. Perceptron (recap + worked example)
 
-> 📌 Full treatment in [Lecture 4 Part A](04_LogisticReg_DecisionTree_Metrics.md). Brief recap here:
+> 📌 Full treatment + the "weighted vote" analogy in [Lecture 4 Part A](04_LogisticReg_DecisionTree_Metrics.md). Brief recap:
 
-The **Perceptron** (Rosenblatt 1958; refined Minsky & Papert 1969) upgrades the MP neuron by **adding learnable weights** $w_i$. Inputs **no longer Boolean**.
+🎯 **Story:** the MP committee where now **some members' votes count more** (weights) — and the committee can *learn* those weights from mistakes (the basketball-aim nudge from Lecture 4).
+
+The **Perceptron** (Rosenblatt 1958; refined Minsky & Papert 1969) adds **learnable weights** $w_i$; inputs **no longer Boolean**.
 
 $$y = 1 \text{ if } \sum_{i=0}^{n} w_i x_i \geq 0, \quad \text{else } 0 \qquad (x_0=1,\; w_0=-\theta)$$
 
-**Perceptron learning:** misclassified positive → $\mathbf{w}=\mathbf{w}+\mathbf{x}$; misclassified negative → $\mathbf{w}=\mathbf{w}-\mathbf{x}$. Converges only if **linearly separable**.
+**Learning:** misclassified positive → $\mathbf{w}=\mathbf{w}+\mathbf{x}$; misclassified negative → $\mathbf{w}=\mathbf{w}-\mathbf{x}$. Converges only if **linearly separable**.
 
-#### 🧠 Worked example — single artificial neuron (slide 10, exam-likely)
+#### 🧠 Worked example — single artificial neuron
 
-A neuron with 3 inputs, weights $w_1=2,\; w_2=-4,\; w_3=1$, activation
-$$\varphi(v) = \begin{cases} 1 & \text{if } v \geq 0 \\ 0 & \text{otherwise} \end{cases}, \qquad v = w_1x_1 + w_2x_2 + w_3x_3$$
+Weights $w_1=2, w_2=-4, w_3=1$, activation $\varphi(v)=1$ if $v\geq0$ else 0, $v = w_1x_1+w_2x_2+w_3x_3$.
 
-**Pattern P1:** input $(x_1,x_2,x_3) = (1, 0, 0)$
-$$v = 2(1) - 4(0) + 1(0) = 2 \quad (2 > 0) \;\Rightarrow\; y = \varphi(2) = \mathbf{1}$$
+- **P1:** $(1,0,0)$ → $v = 2(1)-4(0)+1(0) = 2 > 0$ → $y = \mathbf{1}$
+- **P2:** $(0,1,1)$ → $v = 2(0)-4(1)+1(1) = -3 < 0$ → $y = \mathbf{0}$
 
-**Pattern P2:** input $(x_1,x_2,x_3) = (0, 1, 1)$
-$$v = 2(0) - 4(1) + 1(1) = -3 \quad (-3 < 0) \;\Rightarrow\; y = \varphi(-3) = \mathbf{0}$$
+#### ✏️ Practice example (made up — solved)
 
-> ✅ **Exam recipe:** ① compute $v = \sum w_i x_i$ → ② apply activation: $v \geq 0$ → 1, else 0. This *exact* problem style appears often.
+Weights $w_1 = -1, w_2 = 3, w_3 = 2$, same step activation, $v = w_1x_1+w_2x_2+w_3x_3$.
+
+- **Input $(2, 1, 0)$:** $v = (-1)(2) + (3)(1) + (2)(0) = -2 + 3 + 0 = 1$. $1 \geq 0$ → $y = \mathbf{1}$
+- **Input $(3, 0, 1)$:** $v = (-1)(3) + (3)(0) + (2)(1) = -3 + 0 + 2 = -1$. $-1 < 0$ → $y = \mathbf{0}$
+
+> ✅ **Recipe:** ① compute $v=\sum w_i x_i$ → ② step: $v\geq0\to1$, else 0.
 
 ---
 
 ## 6. Multilayer Perceptron (MLP)
 
-> An **MLP** stacks neurons into **layers**, so it can solve problems a single neuron can't (like XOR / non-linearly-separable data).
+### 🎯 Picture this
 
-**Example 3-layer network (slide 11):**
+One person can't solve a hard problem alone, but a **team in layers** can: front-line workers each handle a small sub-question, a manager combines their answers. Stacking neurons into layers lets the network solve problems a single neuron can't (like XOR).
+
+### 🔗 Why this matters
 
 ```
         y          ← Output layer: 1 neuron
        ╱│╲╲
-   w₁ w₂ w₃ w₄     ← Layer-2 weights
-   h₁ h₂ h₃ h₄     ← Hidden layer: 4 perceptrons (outputs h₁..h₄)
+   h₁ h₂ h₃ h₄     ← Hidden layer: 4 perceptrons
     ╲╲╳╳╱╱
    x₁    x₂         ← Input layer: 2 inputs
-   (Layer-1 weights: red edge w=−1, blue edge w=+1; bias=−2)
 ```
 
 | Layer | Contents |
 |---|---|
-| **Input layer** | $x_1, x_2$ (the raw features) |
-| **Hidden layer** | 4 perceptrons, producing $h_1, h_2, h_3, h_4$ |
-| **Output layer** | 1 neuron → final $y$ |
+| **Input** | $x_1, x_2$ (raw features) |
+| **Hidden** | 4 perceptrons → $h_1..h_4$ |
+| **Output** | 1 neuron → final $y$ |
 
-> 🔑 **The "simple rule" (exam fact):** *Any Boolean function of $n$ inputs can be represented by a network with **1 hidden layer containing $2^n$ perceptrons** and **1 output perceptron**.*
+> 🔑 **The rule:** *Any Boolean function of $n$ inputs can be represented by a network with **1 hidden layer of $2^n$ perceptrons** + 1 output perceptron.*
 
-#### 🧠 Worked example — applying the rule
+#### 🧠 Worked example
 
-For $n = 3$ inputs: hidden layer needs $2^n = 2^3 = \mathbf{8}$ perceptrons + 1 output perceptron (slide 12's diagram shows exactly 8 hidden units, bias = −3).
+$n = 3$ inputs → hidden layer needs $2^n = 2^3 = \mathbf{8}$ perceptrons + 1 output.
 
-> 💡 **Why $2^n$?** A Boolean function of $n$ inputs has $2^n$ possible input combinations. In the worst case you need one hidden neuron to "detect" each specific combination, then OR them at the output.
+> 💡 **Why $2^n$?** A Boolean function of $n$ inputs has $2^n$ possible input combinations; worst case you need one hidden neuron to "detect" each, then OR them at the output.
+
+#### ✏️ Practice example (made up — solved)
+
+You need to represent an arbitrary Boolean function of **$n = 4$** inputs. By the rule:
+$$\text{hidden perceptrons} = 2^n = 2^4 = \mathbf{16}, \qquad \text{plus } 1 \text{ output perceptron}$$
+→ 16 hidden + 1 output. (Note how fast this grows: $n=3\to8$, $n=4\to16$, $n=5\to32$ — doubling each time, since each new input doubles the number of input combinations to cover.)
 
 ---
 
 ## 7. Perceptron vs Sigmoid Neuron
 
-The perceptron's **step function** has a problem: it's a hard jump.
+### 🎯 Picture this
 
-| | **Perceptron (step)** | **Sigmoid (logistic) neuron** |
+A **light switch** vs. a **dimmer knob**. The perceptron's step function is a switch — it slams from OFF to ON with no in-between, and there's no notion of "how close to flipping" it is. The sigmoid is a dimmer — a smooth ramp. Why does smoothness matter? Because to *train* by "which tiny tweak reduces error," you need to measure slope — and a switch has no usable slope (it's a vertical cliff), while a dimmer's ramp has slope everywhere.
+
+### 🔗 Why this matters
+
+| | **Perceptron (step)** | **Sigmoid neuron** |
 |---|---|---|
-| Output rule | $y=1$ if $\sum w_ix_i \geq 0$ else 0 | $y = \dfrac{1}{1+e^{-\sum w_ix_i}}$ |
-| Shape | Hard step (0 → jumps to 1) | Smooth S-curve |
-| Properties | **Not smooth, not continuous, NOT differentiable** | **Smooth, continuous, DIFFERENTIABLE** |
+| Output | $y=1$ if $\sum w_ix_i \geq 0$ else 0 | $y = \dfrac{1}{1+e^{-\sum w_ix_i}}$ |
+| Shape | Hard step | Smooth S-curve |
+| Properties | Not smooth, **NOT differentiable** | Smooth, **DIFFERENTIABLE** |
 
-```
-   PERCEPTRON (step)            SIGMOID
- y │     ┌──────             y │       ╭─────
- 1 │     │ hard jump         1 │    ╭──╯ smooth
- 0 │─────┘                   0 │──╮─╯
-   └─────┼──►                  └────┼──►
-```
-
-> 🔑 **Why differentiability matters (critical exam point):** training uses **gradient descent**, which needs **derivatives**. The step function isn't differentiable → can't compute gradients → **can't train deep networks**. The sigmoid IS differentiable → enables **backpropagation**. *This single fact is why neural networks use sigmoid/smooth activations, not step functions.*
+> 🔑 **Why differentiability matters:** training uses **gradient descent**, which needs **derivatives** (slopes). The step has no usable slope → can't compute gradients → can't train deep nets. The sigmoid IS differentiable → enables **backpropagation**. *This is why neural nets use smooth activations.*
 
 ---
 
 ## 8. Feed-Forward Neural Network (FFNN)
 
-A **special case of MLP** where data flows strictly **forward** (input → hidden → output, no loops).
+### 🎯 Picture this
 
-### 8.1 The setup & notation
+An **assembly line**. Raw material enters at one end. Each station does **two steps**: combine parts (a weighted sum), then apply a finishing process (squash through an activation). The output of one station is the input to the next. Material only flows **forward** — never loops back.
+
+### 🔗 Why this matters
+
+A special MLP where data flows strictly forward (input → hidden → output, no loops).
 
 | Symbol | Meaning |
 |---|---|
-| Input layer | N-dimensional vector; called the **0th layer** |
-| Hidden layers | $L-1$ hidden layers, each with $n$ neurons |
-| Output layer | $k$ neurons (one per class); called the **Lth layer** |
-| $a_i$ | **pre-activation** at layer $i$ (the linear part, before squashing) |
-| $h_i$ | **activation** at layer $i$ (after applying activation function) |
+| Input layer | N-dim vector; the **0th layer** |
+| Hidden layers | $L-1$ hidden layers |
+| Output layer | $k$ neurons; the **Lth layer** |
+| $a_i$ | **pre-activation** at layer $i$ (the linear part) |
+| $h_i$ | **activation** at layer $i$ (after squashing) |
 | $W_i, b_i$ | weight & bias between layers $i{-}1$ and $i$ |
 
-### 8.2 The two key equations (MUST memorize)
+### 📐 The two key equations
 
-**Pre-activation** (linear combination — like the perceptron's $v$):
+**Pre-activation** (combine parts — weighted sum + bias):
 $$a_i(x) = b_i + W_i\, h_{i-1}(x)$$
 
-**Activation** (apply non-linear function $g$):
+**Activation** (finishing process — squash through $g$):
 $$h_i(x) = g\big(a_i(x)\big)$$
 
-where $g$ = activation function (logistic/tanh/linear/etc.). The final output uses an output activation $O$ (softmax/linear):
-$$f(x) = h_L(x) = O\big(a_L(x)\big)$$
+Final output uses an output activation $O$: $f(x) = h_L(x) = O\big(a_L(x)\big)$.
 
 ```
-  x ─► [a₁ = b₁ + W₁x] ─► [h₁ = g(a₁)] ─► [a₂ = b₂ + W₂h₁] ─► [h₂ = g(a₂)] ─► … ─► ŷ
-       └─ pre-activation ┘ └─ activation ┘   (repeat per layer)
+  x ─► [a₁ = b₁ + W₁x] ─► [h₁ = g(a₁)] ─► [a₂ = b₂ + W₂h₁] ─► … ─► ŷ
+       └─ pre-activation ┘ └─ activation ┘   (repeat per station)
 ```
 
-> 💡 **Two-step rhythm per layer:** ① **linear**: weighted sum + bias → $a$. ② **non-linear**: squash through $g$ → $h$. That $h$ becomes the *input* to the next layer. Repeat.
+> 💡 **Two-step rhythm per layer:** ① linear (weighted sum + bias) → $a$. ② non-linear (squash) → $h$. That $h$ feeds the next layer. Repeat.
 
-#### 🧠 Worked example — one layer's pre-activation & activation
+#### 🧠 Worked example — one layer
 
-Inputs $h_0 = (x_1, x_2) = (2, 3)$. Weights $W_1 = \begin{bmatrix} 1 & 0 \\ -1 & 2 \end{bmatrix}$, bias $b_1 = (1, -1)$. Activation = sigmoid.
+Inputs $h_0 = (2, 3)$. $W_1 = \begin{bmatrix} 1 & 0 \\ -1 & 2 \end{bmatrix}$, $b_1 = (1, -1)$, sigmoid activation.
 
-**Pre-activation $a_1 = b_1 + W_1 h_0$:**
+Pre-activation:
 - Neuron 1: $a_{11} = 1 + (1\cdot 2 + 0\cdot 3) = 1 + 2 = 3$
 - Neuron 2: $a_{12} = -1 + (-1\cdot 2 + 2\cdot 3) = -1 + 4 = 3$
 
+Activation:
+$$h_{11} = \sigma(3) = \frac{1}{1+e^{-3}} \approx 0.95, \qquad h_{12} = \sigma(3) \approx 0.95$$
+→ $h_1 = (0.95, 0.95)$ feeds the next layer.
+
+#### ✏️ Practice example (made up — solved)
+
+Inputs $h_0 = (1, 2)$. $W_1 = \begin{bmatrix} 2 & 1 \\ 0 & -1 \end{bmatrix}$, $b_1 = (-1, 3)$, sigmoid activation.
+
+**Pre-activation $a_1 = b_1 + W_1 h_0$:**
+- Neuron 1: $a_{11} = -1 + (2\cdot 1 + 1\cdot 2) = -1 + (2 + 2) = -1 + 4 = 3$
+- Neuron 2: $a_{12} = 3 + (0\cdot 1 + (-1)\cdot 2) = 3 + (0 - 2) = 3 - 2 = 1$
+
 **Activation $h_1 = \sigma(a_1)$:**
-$$h_{11} = \sigma(3) = \frac{1}{1+e^{-3}} = \frac{1}{1.0498} \approx 0.95$$
-$$h_{12} = \sigma(3) \approx 0.95$$
+$$h_{11} = \sigma(3) = \frac{1}{1+e^{-3}} \approx \mathbf{0.95}, \qquad h_{12} = \sigma(1) = \frac{1}{1+e^{-1}} = \frac{1}{1.368} \approx \mathbf{0.73}$$
+→ $h_1 = (0.95, 0.73)$ becomes the input to the next station. Same two-step rhythm, repeated until the output.
 
-→ This $h_1 = (0.95, 0.95)$ now feeds the next layer. Repeat the same two steps until the output.
-
-### 8.3 Supervised learning in FFNN (slide 18)
+### Supervised learning in FFNN
 
 - **Data:** $\{x_i, y_i\}_{i=1}^{N}$
 - **Model:** $\hat{y}_i = O(W^3 g(W^2 g(W^1 x + b_1) + b_2) + b_3)$ (nested layers)
-- **Parameters:** $\theta = W_1,\dots,W_L,\; b_1,\dots,b_L$
 - **Algorithm:** Gradient Descent **with Backpropagation**
-- **Loss:** e.g. $\min \dfrac{1}{N}\sum (\hat y_i - y_i)^2$, generally $\min \mathcal{L}(\theta)$
+- **Loss:** e.g. $\min \dfrac{1}{N}\sum (\hat y_i - y_i)^2$
 
 ---
 
 ## 9. Decision Boundary by Network Depth
 
-**This is a guaranteed conceptual exam question.** More hidden layers → more complex shapes the network can carve out.
+### 🎯 Picture this
 
-| Hidden layers | What it can represent | Boundary shape |
+Cutting shapes out of paper:
+- **0 hidden layers:** you may only make **one straight cut** → a line.
+- **1 hidden layer:** several straight cuts that join into one **convex blob** (no dents).
+- **2 hidden layers:** combine blobs freely → **any shape**, even separate islands.
+
+### 🔗 Why this matters
+
+| Hidden layers | Can represent | Boundary shape |
 |---|---|---|
-| **0 hidden** | Linear classifier | A single straight **hyperplane** (line) |
-| **1 hidden** | Convex region | Boundary of an **open or closed convex region** |
-| **2 hidden** | Combinations of convex regions | **Arbitrary shapes** (any combination, even disjoint regions) |
+| **0** | Linear classifier | A single straight **hyperplane** |
+| **1** | Convex region | Boundary of an **open/closed convex region** |
+| **2** | Combinations | **Arbitrary** shapes (even disjoint) |
 
 ```
   0 hidden:        1 hidden:          2 hidden:
-   ╲  (one          ╱──╲  (convex      ╭──╮  ╭──╮  (any
-    ╲  line)        │    │  blob)      │  │  │  │   complex /
-     ╲              ╲──╱               ╰──╯  ╰──╯   disjoint shape)
+   ╲  (one line)   ╱──╲ (convex blob)  ╭──╮ ╭──╮ (any/disjoint shape)
+    ╲              ╲──╱                ╰──╯ ╰──╯
 ```
 
-> 🔑 **Takeaway:** depth = expressive power. 0 layers = only lines. 1 layer = convex blobs. 2 layers = essentially **anything**. This is *why* deep networks are powerful.
+> 🔑 **Takeaway:** depth = expressive power. 0 = only lines, 1 = convex blobs, 2 = essentially anything. This is *why* deep networks are powerful.
 
 ---
 
 ## 10. Activation Functions
 
-The activation $g$ is what gives the network its non-linearity. Key ones from the slide table:
+### 🎯 Picture this
+
+The activation is the "finishing process" at each assembly-line station — it decides *how* the combined signal gets shaped before moving on. Different finishes have different properties (range, smoothness, whether they're trainable).
+
+### 🔗 Why this matters
 
 | Name | Equation | Derivative | Note |
 |---|---|---|---|
 | **Identity** | $f(x)=x$ | $f'=1$ | Linear (no squashing) |
-| **Binary step** | 0 if x<0, 1 if x≥0 | 0 (undefined at 0) | Not differentiable → can't train |
+| **Binary step** | 0 if x<0, 1 if x≥0 | 0 (undef at 0) | Not differentiable → can't train |
 | **Logistic (sigmoid)** | $\dfrac{1}{1+e^{-x}}$ | $f'=f(x)(1-f(x))$ | Smooth, output (0,1) |
 | **TanH** | $\dfrac{2}{1+e^{-2x}}-1$ | $f'=1-f(x)^2$ | Output (−1,1), zero-centred |
 | **ReLU** | 0 if x<0, x if x≥0 | 0 if x<0, 1 if x≥0 | Most popular in deep nets |
@@ -304,122 +359,146 @@ The activation $g$ is what gives the network its non-linearity. Key ones from th
 | **ELU** | α(eˣ−1) if x<0, x if x≥0 | — | Smooth ReLU variant |
 | **SoftPlus** | $\log_e(1+e^x)$ | $\dfrac{1}{1+e^{-x}}$ | Smooth ReLU; deriv = sigmoid |
 
-> 💡 **Memorize the sigmoid derivative** $f'(x) = f(x)(1-f(x))$ — it makes backprop calculations very clean (you reuse the forward output).
+> 💡 **Remember the sigmoid derivative** $f'(x) = f(x)(1-f(x))$ — it reuses the forward output, making backprop very clean.
 
 #### 🧠 Worked example — sigmoid + its derivative
 
-At $x = 0$: $f(0) = \frac{1}{1+1} = 0.5$. Derivative $f'(0) = 0.5(1-0.5) = \mathbf{0.25}$ (the sigmoid's steepest point — its slope is maximum at the centre).
+At $x = 0$: $f(0) = \frac{1}{1+1} = 0.5$. Derivative $f'(0) = 0.5(1-0.5) = \mathbf{0.25}$ (the sigmoid's steepest point — slope max at the centre).
+
+#### ✏️ Practice example (made up — solved)
+
+Compute **ReLU** and its derivative at three inputs:
+
+| $x$ | ReLU $= \max(0,x)$ | Derivative ($0$ if $x<0$, $1$ if $x\geq0$) |
+|---|---|---|
+| $-3$ | $0$ | $0$ (flat — "dead" here) |
+| $0$ | $0$ | $1$ (by the $x\geq0$ rule) |
+| $5$ | $5$ | $1$ |
+
+Also the **sigmoid** at $x = 2$: $f(2) = \frac{1}{1+e^{-2}} \approx 0.88$, so $f'(2) = 0.88(1-0.88) = 0.88 \times 0.12 \approx \mathbf{0.106}$.
+→ Note the sigmoid's slope (0.106) is much smaller out at $x=2$ than at its centre ($0.25$ at $x=0$) — it flattens at the edges (this flattening is the "vanishing gradient" issue ReLU was designed to avoid).
 
 ---
 
 ## 11. Training a Neural Network
 
-The training loop (slide 23) is **gradient descent + backpropagation**:
+### 🎯 Picture this
+
+Same study loop as before: make a prediction, see how wrong, figure out *which knobs to turn and by how much*, turn them a little, repeat. For a network the "figure out which knobs" step is **backpropagation**; the "turn them" step is **gradient descent**.
+
+### 🔗 Why this matters
 
 ```
 t = 0;  max_iterations = 1000
 Initialize θ₀ = [W₁⁰,…,W_L⁰, b₁⁰,…,b_L⁰]
 while t++ < max_iterations:
-    h₁,…,h_{L-1}, a₁,…,a_L, ŷ  =  forward_propagation(θₜ)   ← compute prediction
-    ∇θₜ  =  backward_propagation(…)                          ← compute gradients
-    θ_{t+1}  =  θₜ − η ∇θₜ                                   ← update (gradient descent)
+    forward_propagation(θₜ)   ← compute the prediction
+    ∇θₜ = backward_propagation(…)   ← compute gradients (which knobs, how much)
+    θ_{t+1} = θₜ − η ∇θₜ            ← update (turn the knobs a little)
 ```
 
-- **Forward propagation** (slide 24): for each layer, $a_k = b_k + W_k h_{k-1}$, then $h_k = g(a_k)$, until $\hat y = O(a_L)$.
-- **Backward propagation** (slide 24): compute the **output gradient** $\nabla_{a_L}\mathcal{L} = -(e(y) - f(x))$, then propagate gradients **backward** through each layer to get $\nabla_{W_k}$, $\nabla_{b_k}$.
-- **Update rule:** $\theta_{t+1} = \theta_t - \eta\nabla\theta_t$ (same gradient-descent rule as [Lecture 4](04_LogisticReg_DecisionTree_Metrics.md); $\eta$ = learning rate).
+- **Forward propagation:** for each layer, $a_k = b_k + W_k h_{k-1}$, then $h_k = g(a_k)$, until $\hat y = O(a_L)$.
+- **Backward propagation:** compute the output gradient $\nabla_{a_L}\mathcal{L} = -(e(y) - f(x))$, then propagate gradients **backward** through each layer.
+- **Update:** $\theta_{t+1} = \theta_t - \eta\nabla\theta_t$ (same gradient-descent rule as Lecture 4; $\eta$ = learning rate).
 
 ---
 
 ## 12. Backpropagation
 
-> **Backpropagation = just repeated application of the CHAIN RULE from calculus**, used to compute how much each weight contributed to the error.
+### 🎯 Picture this
 
-### 12.1 The chain rule
+A mistake gets made at the end of a long **chain of people passing a message** (telephone game). To assign blame fairly, you walk **backward** down the chain: "how much did the last person's change affect the final error? × how much did the previous person affect the last person? × …" Multiply the blame link-by-link, all the way back. That chain-of-multiplications is exactly the **chain rule** from calculus, and that's all backpropagation is.
+
+### 🔗 Why this matters
+
+> **Backpropagation = repeated application of the CHAIN RULE**, used to compute how much each weight contributed to the error.
+
+#### The chain rule
 
 Given $y = g(u)$ and $u = h(x)$:
-
 $$\frac{dy_i}{dx_k} = \sum_{j=1}^{J}\frac{dy_i}{du_j}\cdot\frac{du_j}{dx_k}$$
 
-> 💡 **Plain English:** to find how the final loss changes w.r.t. an early weight, multiply the derivatives **link by link backward** through the network. "How does loss change with $y$? × how does $y$ change with $a$? × how does $a$ change with the weight?" — chained together.
-
-### 12.2 Why "backward"?
+> 💡 **Plain English:** to find how the final loss changes w.r.t. an early weight, multiply derivatives **link by link backward**: "how does loss change with $y$ × how does $y$ change with $a$ × how does $a$ change with the weight."
 
 ```
-   FORWARD:   x ──► a ──► y ──► J (loss)     [compute prediction & error]
-   BACKWARD:  x ◄── a ◄── y ◄── J            [push error gradients back]
-              dJ/dx ← dJ/da ← dJ/dy ← J
+   FORWARD:   x ──► a ──► y ──► J (loss)     [predict & measure error]
+   BACKWARD:  x ◄── a ◄── y ◄── J            [push blame back]
 ```
 
-You compute the error at the output, then **propagate the gradient backward** layer by layer (output → hidden → input), updating each weight by how much it contributed to the error.
+#### Case 1 — Logistic Regression (single neuron)
 
-### 12.3 Case 1 — Logistic Regression (single neuron, slide 26)
+**Forward:** $a = \sum_{j=0}^{D}\theta_j x_j$, $y = \frac{1}{1+e^{-a}}$, $J = y^*\log y + (1-y^*)\log(1-y)$.
 
-**Forward:**
-$$a = \sum_{j=0}^{D}\theta_j x_j, \qquad y = \frac{1}{1+e^{-a}}, \qquad J = y^*\log y + (1-y^*)\log(1-y)$$
-($y^*$ = true label, $y$ = prediction.)
+**Backward (chain rule):**
+$$\frac{dJ}{dy} = \frac{y^*}{y} + \frac{(1-y^*)}{y-1}, \qquad \frac{dy}{da} = y(1-y), \qquad \frac{da}{d\theta_j} = x_j$$
+$$\Rightarrow \frac{dJ}{d\theta_j} = \frac{dJ}{da}\cdot x_j$$
 
-**Backward (chain rule, step by step):**
-$$\frac{dJ}{dy} = \frac{y^*}{y} + \frac{(1-y^*)}{y-1}$$
-$$\frac{dJ}{da} = \frac{dJ}{dy}\cdot\frac{dy}{da}, \qquad \frac{dy}{da} = \frac{e^{-a}}{(e^{-a}+1)^2} \;(= y(1-y))$$
-$$\frac{dJ}{d\theta_j} = \frac{dJ}{da}\cdot\frac{da}{d\theta_j}, \qquad \frac{da}{d\theta_j} = x_j$$
+> 🔑 **Core backprop pattern:** gradient for weight $\theta_j$ = (error signal at $a$) × (the input $x_j$ that weight multiplied).
 
-> 🔑 So $\dfrac{dJ}{d\theta_j} = \dfrac{dJ}{da}\cdot x_j$ — the gradient for weight $\theta_j$ is "(error signal at $a$) × (the input $x_j$ that weight multiplied)". This is the **core backprop pattern**.
+#### Case 2 — MLP (one hidden layer)
 
-### 12.4 Case 2 — MLP (one hidden layer, slide 27–28)
+Graph: input → hidden linear $a_j=\sum\alpha_{ji}x_i$ → hidden sigmoid $z_j$ → output linear $b=\sum\beta_j z_j$ → output sigmoid $y$ → loss $J=\frac12(y-y^*)^2$.
 
-The computation graph (slide 27): **(A)** input → **(B)** hidden linear $a_j=\sum\alpha_{ji}x_i$ → **(C)** hidden sigmoid $z_j=\frac{1}{1+e^{-a_j}}$ → **(D)** output linear $b=\sum\beta_j z_j$ → **(E)** output sigmoid $y=\frac{1}{1+e^{-b}}$ → **(F)** loss $J=\frac12(y-y^*)^2$.
+Key links (each = "next gradient × local derivative"):
+- $\dfrac{db}{d\beta_j} = z_j$ (output-weight gradient = hidden activation)
+- $\dfrac{db}{dz_j} = \beta_j$ (push gradient back through output weights)
+- $\dfrac{dz_j}{da_j} = z_j(1-z_j)$ (sigmoid derivative)
+- $\dfrac{da_j}{d\alpha_{ji}} = x_i$ (hidden-weight gradient = input)
 
-Backprop applies the chain rule through **every** stage backward:
-$$\frac{dJ}{dy}\to\frac{dJ}{db}\to\underbrace{\frac{dJ}{d\beta_j}}_{\text{output weights}}\to\frac{dJ}{dz_j}\to\frac{dJ}{da_j}\to\underbrace{\frac{dJ}{d\alpha_{ji}}}_{\text{hidden weights}}$$
-
-with the key links (each is "next gradient × local derivative"):
-- $\dfrac{db}{d\beta_j} = z_j$  (output-weight gradient = hidden activation)
-- $\dfrac{db}{dz_j} = \beta_j$  (push gradient back through output weights)
-- $\dfrac{dz_j}{da_j} = \dfrac{e^{-a_j}}{(e^{-a_j}+1)^2} = z_j(1-z_j)$  (sigmoid derivative)
-- $\dfrac{da_j}{d\alpha_{ji}} = x_i$  (hidden-weight gradient = input)
-
-> 🔑 **The repeating pattern (this is ALL of backprop):** *gradient w.r.t. a weight = (gradient flowing back to that neuron) × (the input that weight multiplied)*. Everything else is just chaining sigmoid-derivative ($z(1-z)$) and weight-passthrough ($\beta_j$) terms backward.
+> 🔑 **All of backprop in one line:** *gradient w.r.t. a weight = (gradient flowing back to that neuron) × (the input that weight multiplied).* Everything else is chaining sigmoid-derivative ($z(1-z)$) and weight-passthrough ($\beta_j$) terms backward.
 
 #### 🧠 Worked mini-example — chain rule numerically
 
-Say at the output: $y = 0.8$, true $y^* = 1$, loss $J=\frac12(y-y^*)^2$.
+Output $y = 0.8$, true $y^* = 1$, loss $J=\frac12(y-y^*)^2$.
 - $\dfrac{dJ}{dy} = (y - y^*) = 0.8 - 1 = -0.2$
 - sigmoid deriv $\dfrac{dy}{db} = y(1-y) = 0.8(0.2) = 0.16$
 - $\dfrac{dJ}{db} = (-0.2)(0.16) = -0.032$
-- if a hidden activation feeding it is $z_j = 0.5$: $\dfrac{dJ}{d\beta_j} = \dfrac{dJ}{db}\cdot z_j = (-0.032)(0.5) = \mathbf{-0.016}$
+- hidden activation feeding it $z_j = 0.5$: $\dfrac{dJ}{d\beta_j} = (-0.032)(0.5) = \mathbf{-0.016}$
 
-Then update: $\beta_j^{new} = \beta_j - \eta(-0.016)$. That's one weight, one step. Backprop does this for **every weight** automatically via the chain rule.
+Then update $\beta_j^{new} = \beta_j - \eta(-0.016)$.
+
+#### ✏️ Practice example (made up — solved)
+
+Output $y = 0.6$, true $y^* = 0$, loss $J=\frac12(y-y^*)^2$. A hidden activation feeding the output is $z_j = 0.9$, learning rate $\eta = 0.1$, current $\beta_j = 0.4$.
+
+**Walk the chain backward:**
+1. $\dfrac{dJ}{dy} = (y - y^*) = 0.6 - 0 = 0.6$
+2. sigmoid derivative $\dfrac{dy}{db} = y(1-y) = 0.6(1-0.6) = 0.6 \times 0.4 = 0.24$
+3. $\dfrac{dJ}{db} = \dfrac{dJ}{dy}\cdot\dfrac{dy}{db} = (0.6)(0.24) = 0.144$
+4. $\dfrac{dJ}{d\beta_j} = \dfrac{dJ}{db}\cdot z_j = (0.144)(0.9) = \mathbf{0.1296}$
+
+**Update the weight:** $\beta_j^{new} = \beta_j - \eta\dfrac{dJ}{d\beta_j} = 0.4 - (0.1)(0.1296) = 0.4 - 0.01296 \approx \mathbf{0.387}$.
+
+→ The weight shrank slightly because it contributed to an over-prediction (said 0.6 when truth was 0). Backprop does this for **every weight** automatically, link by link.
 
 ---
 
-## 13. Quick Revision Sheet
+## 13. The Night-Before Recap
 
-**Biological → ANN:** dendrite=input, synapse=weight, soma=process, axon=output.
+**Biological → ANN** (the decision desk): dendrite=input, synapse=weight, soma=process, axon=output.
 
-**MP neuron (1943):** $y=1$ if $\sum x_i \geq \theta$ else 0. No weights, Boolean. $y=0$ if any input inhibitory.
-- AND gate: θ=n (here 3). OR gate: θ=1.
-- **Limitation:** single MP neuron → only **linearly separable** functions (XOR fails).
+**MP neuron (1943)** = hand-counting committee: $y=1$ if $\sum x_i \geq \theta$ else 0. No weights, Boolean. $y=0$ if any input inhibitory (veto). AND gate: θ=n. OR gate: θ=1. **Limitation:** single MP → only **linearly separable** functions (XOR fails).
 
-**Perceptron:** adds learnable weights; non-Boolean inputs. Worked: $w=(2,-4,1)$, input (1,0,0) → v=2 → y=1; input (0,1,1) → v=−3 → y=0.
+**Perceptron** = committee where votes are weighted *and* learnable. Worked: $w=(2,-4,1)$, (1,0,0)→v=2→y=1. Practice: $w=(-1,3,2)$, (2,1,0)→v=1→y=1.
 
-**MLP:** layers of neurons solves non-linear problems. **Rule:** any Boolean fn of $n$ inputs → 1 hidden layer with $2^n$ perceptrons + 1 output.
+**MLP** = a layered team. **Rule:** any Boolean fn of $n$ inputs → 1 hidden layer with $2^n$ perceptrons + 1 output. ($n=3\to8$, $n=4\to16$.)
 
-**Perceptron vs Sigmoid:** step = not differentiable (can't train). Sigmoid = smooth, **differentiable** → enables backprop. *This is why we use sigmoid.*
+**Perceptron vs Sigmoid** = switch vs dimmer. Step = not differentiable (no slope to train on). Sigmoid = smooth, **differentiable** → enables backprop.
 
-**FFNN equations (memorize):**
-- Pre-activation: $a_i = b_i + W_i h_{i-1}$ (linear)
-- Activation: $h_i = g(a_i)$ (non-linear)
+**FFNN equations** (the assembly line):
+- Pre-activation: $a_i = b_i + W_i h_{i-1}$ (combine parts)
+- Activation: $h_i = g(a_i)$ (finishing process)
 - Output: $f(x)=h_L=O(a_L)$
+(Worked: $h_0=(2,3)$ → $h_1=(0.95,0.95)$. Practice: $h_0=(1,2)$ → $h_1=(0.95,0.73)$.)
 
-**Decision boundary by depth:** 0 hidden = line/hyperplane; 1 hidden = convex region; 2 hidden = any/complex shape.
+**Decision boundary by depth** (paper cuts): 0 hidden = line; 1 hidden = convex blob; 2 hidden = any/disjoint shape.
 
-**Activations:** sigmoid $\frac{1}{1+e^{-x}}$, deriv $f(1-f)$; tanh deriv $1-f^2$; ReLU = max(0,x). Step not differentiable.
+**Activations:** sigmoid $\frac{1}{1+e^{-x}}$, deriv $f(1-f)$ (0.25 at centre); tanh deriv $1-f^2$; ReLU $=\max(0,x)$; step not differentiable.
 
-**Training:** loop = forward_propagation → backward_propagation → $\theta_{t+1}=\theta_t-\eta\nabla\theta_t$.
+**Training loop:** forward → backward → $\theta_{t+1}=\theta_t-\eta\nabla\theta_t$.
 
-**Backpropagation = repeated chain rule.** Pattern: *gradient w.r.t. a weight = (gradient flowing back to neuron) × (input that weight multiplied)*. Sigmoid deriv $= y(1-y)$ reused. Worked: y=0.8, y*=1 → dJ/db=−0.032 → dJ/dβ=−0.016.
+**Backpropagation = repeated chain rule** (assigning blame backward down a chain). Pattern: *gradient w.r.t. a weight = (gradient flowing back to neuron) × (input that weight multiplied)*. Sigmoid deriv $=y(1-y)$ reused. Worked: y=0.8, y*=1 → dJ/dβ=−0.016. Practice: y=0.6, y*=0 → dJ/dβ≈0.13, β: 0.4→0.387.
 
 ---
 
-*✅ Study guide for Lecture 5 (Artificial Neural Networks) complete. One PPT left — send the last one whenever ready.*
+*✅ Study guide for Lecture 5 (Artificial Neural Networks) complete.*
