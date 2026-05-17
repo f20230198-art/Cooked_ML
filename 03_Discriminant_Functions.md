@@ -57,7 +57,7 @@ This is different from regression (which predicts a continuous *number*). Classi
 
 The general model for classification:
 
-$$y(\mathbf{x}) = f\big(\mathbf{w}^T\mathbf{x} + w_0\big)$$
+$$y(\mathbf{x}) = f(\mathbf{w}^T\mathbf{x} + w_0)$$
 
 | Symbol | Meaning |
 |---|---|
@@ -67,7 +67,8 @@ $$y(\mathbf{x}) = f\big(\mathbf{w}^T\mathbf{x} + w_0\big)$$
 | $f(\cdot)$ | a fixed **non-linear activation function** that squashes the number into a class decision |
 
 **Example activation function (step function):**
-$$f(u) = \begin{cases} 1 & \text{if } u \geq 0 \\ 0 & \text{otherwise} \end{cases}$$
+
+$$f(u) = 1 \ \text{ if } u \geq 0, \qquad f(u) = 0 \ \text{ otherwise}$$
 
 > 💡 **Why apply $f$?** $\mathbf{w}^T\mathbf{x}+w_0$ is just a real number (could be −7.3 or +42). We need a *class label*. The step function turns "is it positive?" into a clean 1 or 0. Even though $f$ is non-linear, **the decision boundary itself is still linear in $\mathbf{x}$** (because the boundary is where $\mathbf{w}^T\mathbf{x}+w_0=0$, a linear equation).
 
@@ -80,6 +81,8 @@ Since $4 \geq 0$, $f(4) = 1$ → assign $\mathbf{x}$ to **class 1**.
 ---
 
 ## 3. Two-Class Discriminant Function + the Geometry
+
+> 🎯 **The whole idea in one picture:** draw a straight line through the data. Everything on one side = class 1, everything on the other side = class 2. The function $y(\mathbf{x})$ is just a **score**: its *sign* tells you which side you're on, and its *size* tells you *how far* from the line you are. That's all this section is. The "geometry" formulas just turn that score into an actual distance in cm/units.
 
 For a **2-class** problem, the simple linear discriminant function is:
 
@@ -109,15 +112,16 @@ $$y(\mathbf{x}) = \mathbf{w}^T\mathbf{x} + w_0$$
                    −w₀/‖w‖ (distance of boundary from origin)
 ```
 
+> 💡 **Why divide by $\|\mathbf{w}\|$?** The raw score $y(\mathbf{x})$ depends on how "big" you happened to make $\mathbf{w}$ — double $\mathbf{w}$ and every score doubles, even though the line didn't move. Dividing by $\|\mathbf{w}\|$ (the *length* of $\mathbf{w}$) cancels that out and gives a **true distance** that doesn't depend on scaling. It's like converting "5 ruler-marks" into "5 cm" so the number actually means something.
+
 **Two distance facts to remember:**
 
-1. **Perpendicular (signed) distance of a point $\mathbf{x}$ from the boundary:**
+1. **Perpendicular (signed) distance of a point $\mathbf{x}$ from the boundary** = its score divided by the length of $\mathbf{w}$:
 $$r = \frac{y(\mathbf{x})}{\|\mathbf{w}\|} = \frac{\mathbf{w}^T\mathbf{x} + w_0}{\|\mathbf{w}\|}$$
-   (The slide writes the projection of $\mathbf{x}$ in the $\mathbf{w}$ direction as $\dfrac{\mathbf{w}^T\mathbf{x}}{\|\mathbf{w}\|}$.)
 
 2. **Distance of the boundary itself from the origin** $= \dfrac{-w_0}{\|\mathbf{w}\|}$.
 
-Here $\|\mathbf{w}\|$ ("norm of w") = the length of the weight vector $= \sqrt{w_1^2 + w_2^2 + \dots}$.
+Here $\|\mathbf{w}\|$ ("norm of w") = the length of the weight vector $= \sqrt{w_1^2 + w_2^2 + \dots}$ (Pythagoras on the weights).
 
 > 💡 **Intuition:** $\mathbf{w}$ points perpendicular to the boundary (it's the "uphill" direction of $y$). The bigger $y(\mathbf{x})$, the further $\mathbf{x}$ sits from the boundary on the $C_1$ side. Dividing by $\|\mathbf{w}\|$ converts the raw score into an actual geometric distance.
 
@@ -163,6 +167,8 @@ A single linear discriminant separates only **two** classes (one hyperplane). Fo
 
 ## 5. The K Linear Functions Approach
 
+> 🎯 **Plain idea:** give **each class its own scoring machine**. Show a point to all $K$ machines, each shouts a number, and the **loudest one wins** (that's the class). No voting conflicts, no "?" regions — exactly one winner every time. That's why it beats OvR/OvO.
+
 A cleaner fix: build **$K$ linear functions**, one per class:
 
 $$y_k(\mathbf{x}) = \mathbf{w}_k^T\mathbf{x} + w_{k0}$$
@@ -175,6 +181,8 @@ $$y_k(\mathbf{x}) > y_j(\mathbf{x}) \quad \text{for all } j \neq k$$
 
 $$(\mathbf{w}_k - \mathbf{w}_j)^T\mathbf{x} + (w_{k0} - w_{j0}) = 0$$
 
+(Don't memorize this — it's just "set $y_k = y_j$ and move everything to one side." The boundary is wherever two machines are *tied*.)
+
 > 🔑 **Key property:** the decision regions of this discriminant are always **singly connected and convex** — no fragmented or ambiguous regions like OvR/OvO. (Convex = the line between any two points of a region stays inside that region.)
 
 #### 🧠 Worked example — winner-takes-all
@@ -186,13 +194,15 @@ $$(\mathbf{w}_k - \mathbf{w}_j)^T\mathbf{x} + (w_{k0} - w_{j0}) = 0$$
 
 ## 6. Least Squares for Classification
 
+> 🎯 **Plain idea:** we want the machines to output `1` for the correct class and `0` for the others. So: write down "how far off are we from that ideal?", square it (so over- and under-shoots both count), add it up over all data, and pick the weights that make that total as small as possible. Same recipe as regression — just applied to 0/1 targets.
+
 **Question:** how do we actually *learn* the parameters $\mathbf{w}_k, w_{k0}$? **One approach: least squares** (same idea as in regression — minimize squared error).
 
 We use **1-of-K (one-hot) target vectors**: e.g. for 3 classes, class 2 → $\mathbf{t} = (0, 1, 0)$.
 
 The error to minimize over **all $N$ examples** and **all $K$ class-components**:
 
-$$E(\mathbf{W}) = \frac{1}{2}\sum_{n=1}^{N}\sum_{k=1}^{K}\big(y_k(\mathbf{x}_n) - t_{nk}\big)^2$$
+$$E(\mathbf{W}) = \frac{1}{2}\sum_{n=1}^{N}\sum_{k=1}^{K}(y_k(\mathbf{x}_n) - t_{nk})^2$$
 
 | Symbol | Meaning |
 |---|---|
@@ -209,7 +219,7 @@ $$E(\mathbf{W}) = \frac{1}{2}\sum_{n=1}^{N}\sum_{k=1}^{K}\big(y_k(\mathbf{x}_n) 
 One example $n$, 3 classes. True class = 2, so target $\mathbf{t} = (0, 1, 0)$. Model outputs $\mathbf{y} = (0.2, 0.7, 0.3)$.
 
 $$E = \frac{1}{2}\Big[(0.2-0)^2 + (0.7-1)^2 + (0.3-0)^2\Big]$$
-$$= \frac{1}{2}\big[0.04 + 0.09 + 0.09\big] = \frac{1}{2}(0.22) = \mathbf{0.11}$$
+$$= \frac{1}{2}[0.04 + 0.09 + 0.09] = \frac{1}{2}(0.22) = 0.11$$
 
 (Sum this over all $N$ examples for the total error.)
 
@@ -245,6 +255,8 @@ With 3+ classes, the least-squares boundaries can **completely squeeze out the m
 
 ## 8. Fisher Linear Discriminant / LDA
 
+> 🎯 **The one idea:** imagine each data point is a star in the sky and you're shining all of them onto a flat wall (a "projection"). Depending on the **angle** you shine from, the class-blobs on the wall either **overlap into a mess** or **land in clean separate clumps**. LDA's only job: **find the best angle** so the clumps are far apart *and* each clump stays tight. The two "scatter matrix" formulas below are just the math for "how far apart the clumps are" and "how spread out each clump is."
+
 > **LDA (Linear Discriminant Analysis)** finds a **projection direction** that **best separates the classes**. It's also used for **dimensionality reduction** (as a preprocessing step).
 
 ### 8.1 The core idea
@@ -273,22 +285,26 @@ $$\text{maximize} \quad \frac{\text{between-class separation (inter-class)}}{\te
 Assume $C$ classes. Class $i$ has $M_i$ samples. Total samples:
 $$M = \sum_{i=1}^{C} M_i$$
 
-- $\boldsymbol{\mu}_i$ = mean of class $i$.
-- $\boldsymbol{\mu}$ = mean of the whole dataset: $\displaystyle\boldsymbol{\mu} = \frac{1}{C}\sum_{i=1}^{C}\boldsymbol{\mu}_i$
+- $\mu_i$ = mean of class $i$.
+- $\mu$ = mean of the whole dataset: $\mu = \frac{1}{C}\sum_{i=1}^{C}\mu_i$
 
 ### 8.3 Within-class scatter matrix $S_w$
 
 Measures **how spread out each class is around its own mean** (we want this **small**):
 
-$$S_w = \sum_{i=1}^{C}\sum_{j=1}^{M_i}(\mathbf{x}_{ij} - \boldsymbol{\mu}_i)(\mathbf{x}_{ij} - \boldsymbol{\mu}_i)^T$$
+$$S_w = \sum_{i=1}^{C}\sum_{j=1}^{M_i}(\mathbf{x}_{ij} - \mu_i)(\mathbf{x}_{ij} - \mu_i)^T$$
 
-Read it as: for every class $i$, for every point $j$ in it, take (point − its class mean), and accumulate. **Small $S_w$ = tight, compact classes.**
+**Decode the scary part:** `(point − its class mean)` is just "how far is this point from the centre of its own group." Squaring it (the `(...)( ...)^T` is just the vector way of squaring) makes it positive. Then you **add up that spread for every point in every class**. If everyone sits close to their group's centre → small $S_w$.
+
+> 💡 In **1-D** this formula is literally just $\sum(\text{point}-\text{class mean})^2$ — the ordinary "spread" you already know. The matrix version is the same thing for many dimensions at once. **Small $S_w$ = tight, compact classes.**
 
 ### 8.4 Between-class scatter matrix $S_b$
 
 Measures **how far the class means are from the overall mean** (we want this **large**):
 
-$$S_b = \sum_{i=1}^{C}(\boldsymbol{\mu}_i - \boldsymbol{\mu})(\boldsymbol{\mu}_i - \boldsymbol{\mu})^T$$
+$$S_b = \sum_{i=1}^{C}(\mu_i - \mu)(\mu_i - \mu)^T$$
+
+**Decode:** `(class centre − overall centre)` = "how far is this group's centre from the middle of everything." Square it, add over all classes. If the group centres are pulled far away from the global middle → big $S_b$. In **1-D** it's just $\sum(\text{class mean} - \text{overall mean})^2$.
 
 **Large $S_b$ = class centres well separated.**
 
@@ -347,8 +363,8 @@ Boundary between $C_k,C_j$: $(\mathbf{w}_k-\mathbf{w}_j)^T\mathbf{x}+(w_{k0}-w_{
 - ❌ Masks the middle class in multi-class problems.
 
 **LDA (Fisher):** maximize $\dfrac{S_b}{S_w}$ = $\dfrac{\text{between-class separation}}{\text{within-class variance}}$. Also used for dimensionality reduction.
-- Within-class: $S_w = \sum_i\sum_j (\mathbf{x}_{ij}-\boldsymbol{\mu}_i)(\mathbf{x}_{ij}-\boldsymbol{\mu}_i)^T$ — want **small** (tight classes).
-- Between-class: $S_b = \sum_i (\boldsymbol{\mu}_i-\boldsymbol{\mu})(\boldsymbol{\mu}_i-\boldsymbol{\mu})^T$ — want **large** (separated centres).
+- Within-class: $S_w = \sum_i\sum_j (\mathbf{x}_{ij}-\mu_i)(\mathbf{x}_{ij}-\mu_i)^T$ — want **small** (tight classes).
+- Between-class: $S_b = \sum_i (\mu_i-\mu)(\mu_i-\mu)^T$ — want **large** (separated centres).
 - Worked example: classes {1,2,3} & {6,7,8} → $S_w=4$, $S_b=12.5$, ratio $=3.125$ (well separated).
 
 ---
