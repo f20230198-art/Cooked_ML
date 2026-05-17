@@ -300,47 +300,50 @@ The overfit curve passes through every training point perfectly but **wiggles cr
 
 ## 8. Linear Basis Function Models
 
-This section generalizes linear regression so it can fit **curves**, not just straight lines.
+> **🎯 Read this first — the one idea this whole section is about:**
+>
+> A straight line `ŷ = θ₀ + θ₁x` is too weak for data that bends (curves). We want curves. **The trick: don't change the line, change the inputs.** Feed `x` through some curvy functions *first*, then fit a straight-line-style model on *those*. The math stays as easy as a straight line, but the result is a curve. That's the entire section. Everything below is just naming the curvy functions.
 
-### 8.1 The plain linear model (slide 16)
+### 8.1 Why a plain straight line isn't enough
 
-$$y(\mathbf{x}, \mathbf{w}) = w_0 + w_1 x_1 + \dots + w_D x_D$$
+The plain linear model just multiplies each input by a weight and adds them:
 
-where $\mathbf{x} = (x_1, \dots, x_D)^T$ are the $D$ input variables.
+$$y = w_0 + w_1 x_1 + \dots + w_D x_D$$
 
-- It is **linear in both the parameters ($w$) AND the input variables ($x$)**.
-- ⚠️ **Limitation:** can only fit a **straight line / flat plane**. Can't model curves.
+(Here $w$ = weights = the same thing as θ. $D$ = how many inputs.)
 
-### 8.2 The basis function trick (slide 17)
+- ⚠️ **Problem:** this can only ever draw a **straight line** (or a flat plane). If the real data curves, a straight line fits badly.
 
-**Idea:** instead of using raw $x$, pass it through fixed **nonlinear functions** $\phi_j(x)$ first, then combine those *linearly*.
+### 8.2 The trick (this is the key part)
 
-$$y(\mathbf{x}, \mathbf{w}) = w_0 + \sum_{j=1}^{M-1} w_j \phi_j(\mathbf{x})$$
+**Analogy:** You only own a ruler (straight lines). You need to draw a curve. Trick: bend the *paper*, draw a straight line on the bent paper, unbend it → you get a curve. The "bending the paper" = passing `x` through a curvy function $\phi(x)$ ("phi") **before** the model sees it.
 
-| Symbol | Meaning |
+So instead of using raw `x`, we use $\phi_1(x), \phi_2(x), \dots$ — fixed curvy transforms of `x` — and fit a straight-line model **on those**:
+
+$$y = w_0 + w_1 \phi_1(x) + w_2 \phi_2(x) + \dots$$
+
+| Symbol | Plain meaning |
 |---|---|
-| $\phi_j(x)$ | a **basis function** (a fixed nonlinear transform of the input)* |
-| $M$ | total number of parameters in the model |
-| $w_0$ | the **bias parameter** (fixed offset) |
+| $\phi_j(x)$ | a **basis function** — a fixed curvy recipe applied to the input (e.g. "square it", "bump near 5") |
+| $w_j$ | weight (how much of that curvy piece to mix in) — *this* is what we learn |
+| $w_0$ | the bias / offset (the `θ₀`-equivalent) |
 
-> *The slide calls $\phi_j$ a "bias function" — it actually means **basis function**. (Minor slide typo. Only $w_0$ is the *bias parameter*.)
+> 💡 **The "still linear" point everyone gets confused by:** we call it a *linear* model because it is **linear in the weights $w$** (we just multiply each $\phi$ by a number and add — easy to solve). It is **not** linear in `x`, because $\phi$ bent `x` into a curve. "Linear model" = linear in the *weights*, **not** in the input. That sentence is a common exam line.
 
-By defining a dummy $\phi_0(\mathbf{x}) = 1$, it compresses to the clean vector form:
-
-$$y(\mathbf{x}, \mathbf{w}) = \sum_{j=0}^{M-1} w_j \phi_j(\mathbf{x}) = \mathbf{w}^T \phi(\mathbf{x})$$
-
-where $\mathbf{w} = (w_0,\dots,w_{M-1})^T$ and $\phi = (\phi_0,\dots,\phi_{M-1})^T$.
-
-> 🔑 **The big idea:** the model is still **linear in the weights $w$** (so it's easy to train), but because $\phi$ is nonlinear, it can fit **curves**. "Linear model" refers to linear in *weights*, not in *x*.
+If you also write a dummy $\phi_0(x) = 1$ for the offset, all of it collapses into one tidy expression $y = \mathbf{w}^T \phi(x)$ — that's just shorthand for the sum above, nothing new.
 
 ### 8.3 Three types of basis functions
 
+> These are just **three different "curvy recipes"** for $\phi$. The only thing you must remember for the exam: which ones are **GLOBAL** vs **LOCAL** (explained right here):
+> - **GLOBAL** = touching the curve in one place wobbles it *everywhere* (like pulling one corner of a stiff bedsheet — the whole sheet moves).
+> - **LOCAL** = touching it in one place only affects *that nearby region* (like pressing one key on a piano — only that note sounds).
+
 #### (a) Polynomial basis — $\phi_j(x) = x^j$
 
-Gives **polynomial regression**: $\phi_0=1,\ \phi_1=x,\ \phi_2=x^2,\ \phi_3=x^3,\dots$
+Just raise `x` to powers: $1,\ x,\ x^2,\ x^3,\dots$ This is ordinary **polynomial regression**.
 
-- ⚠️ **Limitation: they are GLOBAL.** A change in one region of the input affects the curve **everywhere** (the whole polynomial shifts).
-- **Fix:** split the input space into regions, use a different polynomial in each → **spline functions** (polynomials joined together; flexible but complex).
+- ⚠️ **It is GLOBAL.** Because every point uses the same $x^2, x^3\dots$, nudging the fit in one spot changes the whole curve everywhere else too.
+- **Fix:** chop the x-axis into regions and use a separate small polynomial in each region → these joined-up pieces are called **splines** (flexible, but more complex to manage).
 
 #### (b) Gaussian basis — LOCAL
 
@@ -348,10 +351,11 @@ $$\phi_j(x) = \exp\left( -\frac{(x - \mu_j)^2}{2s^2} \right)$$
 
 | Symbol | Controls |
 |---|---|
-| $\mu_j$ | **location** (where the bump is centred) |
-| $s$ | **scale / width** of the bump |
+| $\mu_j$ ("mu") | **where** the bump sits on the x-axis (its centre) |
+| $s$ | **how wide** the bump is |
 
-- These are **LOCAL**: a small change in $x$ only affects **nearby** basis functions (a bell-curve "bump" — far away it's ≈0).
+- Shape: a **bell-curve bump**. It's tall near its centre $\mu_j$ and fades to ≈0 far away.
+- That's why it's **LOCAL**: each bump only "cares about" inputs near its own centre. Far from the centre it contributes nothing. You build a curve by adding several bumps at different centres — like covering a shape with overlapping spotlights.
 
 ```
   φ(x)  ╱╲   ╱╲   ╱╲   ╱╲    ← each bump is local;
@@ -365,9 +369,9 @@ $$\phi_j(x) = \exp\left( -\frac{(x - \mu_j)^2}{2s^2} \right)$$
 
 $$\phi_j(x) = \sigma\left( \frac{x - \mu_j}{s} \right) \qquad \text{where} \quad \sigma(a) = \frac{1}{1 + e^{-a}}$$
 
-- $\sigma(a)$ is the **sigmoid (logistic) function** — an S-shaped curve from 0 to 1.
-- $\mu_j$ controls **location**, $s$ controls **scale (slope/steepness)**.
-- Also **LOCAL** — small change in $x$ only affects nearby basis functions.
+- $\sigma(a)$ (sigma) is the **sigmoid** function — a smooth **S-shaped step** that climbs from 0 up to 1.
+- $\mu_j$ = where the S-step happens; $s$ = how steep/gentle the step is.
+- Treated as **LOCAL** too — the "action" (the rising part of the S) is concentrated near $\mu_j$; far away it's just flat 0 or flat 1.
 
 #### 🧠 Worked example — compute a sigmoid value
 
@@ -383,7 +387,13 @@ $$\sigma(2) = \frac{1}{1 + e^{-2}} = \frac{1}{1 + 0.135} = \frac{1}{1.135} \appr
 
 ## 9. Bias and Variance
 
-These two define *why* models underfit or overfit.
+These two words just describe **two different ways a model can be wrong**. Forget the formulas for a second — use this picture:
+
+> 🎯 **Archer shooting at a target.** Retrain the model = let the archer shoot a fresh batch of arrows.
+> - **Bias** = how far the *average* arrow lands from the bullseye. Consistently hitting low-left = high bias (the model is *aimed wrong* → too simple → **underfit**).
+> - **Variance** = how *scattered* the arrows are from each other. Arrows sprayed all over = high variance (the model is *jumpy*, over-reacts to which data it saw → too complex → **overfit**).
+>
+> The formulas below are literally just "average miss" (bias) and "spread" (variance) written in math.
 
 ### 9.1 Bias
 
@@ -485,17 +495,17 @@ Mapped to the price/size curves:
 
 ## 11. Regularization (Ridge & Lasso)
 
-> **Regularization** = a technique to reduce overfitting by adding an **extra penalty term** to the error function. It **discourages overly complex models** and **reduces variance**.
+> 🎯 **One-line idea:** a model overfits by cranking its weights huge to wiggle through every point. So we **add a fine for big weights** to the error score. Now the model only makes a weight big if it's *really worth it*. Result: a smoother, simpler model.
+>
+> Think of it like a word limit on an essay: without a limit you ramble (overfit); the penalty forces you to keep only what matters.
 
-**Intuition:** Overfitting happens when weights ($\beta_j$) get huge to wiggle through every point. Regularization **punishes large weights**, forcing the model to stay simpler/smoother.
+### Starting point — RSS (the plain error)
 
-### Starting point — RSS (Residual Sum of Squares)
-
-For a multiple linear regression $Y \approx \beta_0 + \beta_1 X_1 + \dots + \beta_p X_p$, the basic loss is:
+**RSS = Residual Sum of Squares = just "total squared error".** Residual = (actual − predicted). Square each one (so negatives don't cancel), add them up. Big RSS = bad model. Plain regression only tries to make RSS small:
 
 $$\text{RSS} = \sum_{i=1}^{n}\left( y_i - \beta_0 - \sum_{j=1}^{p}\beta_j x_{ij} \right)^2$$
 
-This is just "sum of squared errors" (how wrong the model is). Plain regression minimizes only this.
+(The scary sum is literally "for every data point, take actual `y` minus the model's prediction, square it, total it up.") The two methods below = **RSS + a fine**. They differ only in *how the fine is calculated*.
 
 ### 11.1 Ridge Regression (L2)
 
