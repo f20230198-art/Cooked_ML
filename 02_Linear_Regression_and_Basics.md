@@ -12,7 +12,7 @@
 1. [What is Regression?](#1-what-is-regression)
 2. [Types of Regression Models](#2-types-of-regression-models)
 3. [Simple Linear Regression](#3-simple-linear-regression)
-4. [⭐ Worked Example: Finding θ₀ and θ₁ (slide 7)](#4--worked-example-finding-θ₀-and-θ₁-the-most-important-problem)
+4. [⭐ Worked Example: Finding theta-0 and theta-1 (slide 7)](#4--worked-example-finding-theta-0-and-theta-1-the-most-important-problem)
 5. [Model Evaluation](#5-model-evaluation)
 6. [Multiple Linear Regression](#6-multiple-linear-regression)
 7. [Overfitting and Underfitting](#7-overfitting-and-underfitting)
@@ -109,7 +109,7 @@ All three of these are **the exact same equation** — different books use diffe
 
 ---
 
-## 4. ⭐ Worked Example: Finding θ₀ and θ₁ (the most important problem)
+## 4. ⭐ Worked Example: Finding theta-0 and theta-1 (the most important problem)
 
 This is the slide-7 hand calculation. **This type of question is extremely likely in your exam.** Memorize the *procedure*, not numbers.
 
@@ -151,17 +151,17 @@ Let's verify the first term so you see *exactly* how to compute it:
 - $(2.0 - 3.03)^2 = (-1.03)^2 = 1.06$ → goes into the **denominator**
 
 You repeat this for all 9 rows, add up the numerator, add up the denominator, divide:
-$$\boxed{\theta_1 = 39}$$
+$$\theta_1 = 39$$
 
 **STEP 3 — Compute the intercept** using $\theta_0 = \bar{y} - \theta_1\bar{x}$:
 $$\theta_0 = 226.22 - 39 \times 3.03 = 226.22 - 118.17 = 125.74$$
-$$\boxed{\theta_0 = 125.74}$$
+$$\theta_0 = 125.74$$
 
 **STEP 4 — Write the final model:**
-$$\boxed{\hat{y} = 125.74 + 39\,x_1}$$
+$$\hat{y} = 125.74 + 39 x_1$$
 
 **STEP 5 — Use it to predict.** Row 9 had engine size $x = 2.4$ and CO₂ = `?`:
-$$\hat{y} = 125.74 + 39 \times 2.4 = 125.74 + 93.6 = \mathbf{219.34}$$
+$$\hat{y} = 125.74 + 39 \times 2.4 = 125.74 + 93.6 = 219.34$$
 
 > ✅ **Exam recipe (memorize this order):** ① means $\bar x,\bar y$ → ② slope $\theta_1$ → ③ intercept $\theta_0 = \bar y - \theta_1\bar x$ → ④ write $\hat y = \theta_0+\theta_1 x$ → ⑤ substitute the new $x$ to predict.
 
@@ -216,7 +216,7 @@ Fixes the "unlucky split" problem. Split data into **k folds**. Each round: use 
 #### 🧠 Worked example (the slide's numbers)
 
 4 folds give accuracies **80%, 84%, 82%, 86%**:
-$$\text{Accuracy} = \frac{80 + 84 + 82 + 86}{4} = \frac{332}{4} = \mathbf{83\%}$$
+$$\text{Accuracy} = \frac{80 + 84 + 82 + 86}{4} = \frac{332}{4} = 83\%$$
 
 > ✅ **Why best:** every data point is used for *both* training and testing (in different rounds) → **more consistent, reliable** out-of-sample accuracy, not dependent on one lucky split.
 
@@ -244,7 +244,7 @@ $$\theta^T = [\theta_0,\ \theta_1,\ \theta_2,\ \dots] \qquad X = \begin{bmatrix}
 #### 🧠 Mini worked example
 
 Say a trained model is $\hat y = 50 + 30\,x_1 + 15\,x_2$ predicting CO₂ from engine size $x_1$ and cylinders $x_2$. For a car with engine size $2.0$ and $4$ cylinders:
-$$\hat y = 50 + 30(2.0) + 15(4) = 50 + 60 + 60 = \mathbf{170}$$
+$$\hat y = 50 + 30(2.0) + 15(4) = 50 + 60 + 60 = 170$$
 
 ---
 
@@ -328,9 +328,9 @@ $$y(\mathbf{x}, \mathbf{w}) = w_0 + \sum_{j=1}^{M-1} w_j \phi_j(\mathbf{x})$$
 
 By defining a dummy $\phi_0(\mathbf{x}) = 1$, it compresses to the clean vector form:
 
-$$y(\mathbf{x}, \mathbf{w}) = \sum_{j=0}^{M-1} w_j \phi_j(\mathbf{x}) = \mathbf{w}^T \boldsymbol{\phi}(\mathbf{x})$$
+$$y(\mathbf{x}, \mathbf{w}) = \sum_{j=0}^{M-1} w_j \phi_j(\mathbf{x}) = \mathbf{w}^T \phi(\mathbf{x})$$
 
-where $\mathbf{w} = (w_0,\dots,w_{M-1})^T$ and $\boldsymbol{\phi} = (\phi_0,\dots,\phi_{M-1})^T$.
+where $\mathbf{w} = (w_0,\dots,w_{M-1})^T$ and $\phi = (\phi_0,\dots,\phi_{M-1})^T$.
 
 > 🔑 **The big idea:** the model is still **linear in the weights $w$** (so it's easy to train), but because $\phi$ is nonlinear, it can fit **curves**. "Linear model" refers to linear in *weights*, not in *x*.
 
@@ -364,7 +364,7 @@ $$\phi_j(x) = \exp\left\{ -\frac{(x - \mu_j)^2}{2s^2} \right\}$$
 
 #### (c) Sigmoidal basis — LOCAL
 
-$$\phi_j(x) = \sigma\!\left( \frac{x - \mu_j}{s} \right) \qquad \text{where}\quad \sigma(a) = \frac{1}{1 + e^{-a}}$$
+$$\phi_j(x) = \sigma\left( \frac{x - \mu_j}{s} \right) \qquad \text{where} \quad \sigma(a) = \frac{1}{1 + e^{-a}}$$
 
 - $\sigma(a)$ is the **sigmoid (logistic) function** — an S-shaped curve from 0 to 1.
 - $\mu_j$ controls **location**, $s$ controls **scale (slope/steepness)**.
@@ -374,7 +374,7 @@ $$\phi_j(x) = \sigma\!\left( \frac{x - \mu_j}{s} \right) \qquad \text{where}\qua
 
 Let $\mu_j = 0$, $s = 1$, and input $x = 2$:
 $$a = \frac{x - \mu_j}{s} = \frac{2 - 0}{1} = 2$$
-$$\sigma(2) = \frac{1}{1 + e^{-2}} = \frac{1}{1 + 0.135} = \frac{1}{1.135} \approx \mathbf{0.88}$$
+$$\sigma(2) = \frac{1}{1 + e^{-2}} = \frac{1}{1 + 0.135} = \frac{1}{1.135} \approx 0.88$$
 
 > Sanity check: at $x=\mu$ (i.e. $a=0$): $\sigma(0)=\frac{1}{1+1}=0.5$ — the curve's midpoint. As $x\to\infty$, $\sigma\to1$; as $x\to-\infty$, $\sigma\to0$. That's the S-shape.
 
@@ -392,9 +392,9 @@ These two define *why* models underfit or overfit.
 
 Let $f(x)$ = the true model, $\hat{f}(x)$ = our estimate:
 
-$$\text{Bias}\big(\hat{f}(x)\big) = \mathbb{E}\big[\hat{f}(x)\big] - f(x)$$
+$$\text{Bias}(\hat{f}(x)) = E[\hat{f}(x)] - f(x)$$
 
-(Read $\mathbb{E}[\cdot]$ as "the average/expected value of".)
+(Read $E[\cdot]$ as "the average/expected value of".)
 
 - **High bias** → model pays too little attention to training data, **oversimplifies** → **UNDERFITTING**.
 - **Simple model → high bias. Complex model → low bias.**
@@ -403,7 +403,7 @@ $$\text{Bias}\big(\hat{f}(x)\big) = \mathbb{E}\big[\hat{f}(x)\big] - f(x)$$
 
 > **Variance** = how much the model's prediction **wobbles** if you retrain it on different samples of data. It measures the spread.
 
-$$\text{Variance}\big(\hat{f}(x)\big) = \mathbb{E}\Big[\big(\hat{f}(x) - \mathbb{E}[\hat{f}(x)]\big)^2\Big]$$
+$$\text{Variance}(\hat{f}(x)) = E[(\hat{f}(x) - E[\hat{f}(x)])^2]$$
 
 - **High variance** → model pays too much attention to training data (incl. noise), **doesn't generalize** → great on train, bad on test → **OVERFITTING**.
 - **Simple model → low variance. Complex model → high variance.**
@@ -417,9 +417,9 @@ $$\text{Variance}\big(\hat{f}(x)\big) = \mathbb{E}\Big[\big(\hat{f}(x) - \mathbb
 #### 🧠 Worked example — bias of a model
 
 True value $f(x) = 100$. We retrain the model 4 times on different samples and it predicts: 80, 82, 78, 80.
-- Average prediction $\mathbb{E}[\hat f(x)] = (80+82+78+80)/4 = 80$
-- **Bias** $= 80 - 100 = \mathbf{-20}$ (it consistently underestimates → high bias)
-- **Variance** = spread around 80: deviations are $0, 2, -2, 0$; squared = $0,4,4,0$; mean = $\mathbf{2}$ (small → low variance)
+- Average prediction $E[\hat f(x)] = (80+82+78+80)/4 = 80$
+- **Bias** $= 80 - 100 = -20$ (it consistently underestimates → high bias)
+- **Variance** = spread around 80: deviations are $0, 2, -2, 0$; squared = $0,4,4,0$; mean = $2$ (small → low variance)
 
 → This is a **high-bias, low-variance** model (an underfitter).
 
@@ -502,7 +502,7 @@ This is just "sum of squared errors" (how wrong the model is). Plain regression 
 
 Add a penalty equal to **λ × (sum of squared weights)**:
 
-$$\underbrace{\sum_{i=1}^{n}\left( y_i - \beta_0 - \sum_{j=1}^{p}\beta_j x_{ij} \right)^2}_{\text{RSS}} + \lambda \sum_{j=1}^{p}\beta_j^{2} \;=\; \text{RSS} + \lambda \sum_{j=1}^{p}\beta_j^{2}$$
+$$\text{RSS} + \lambda \sum_{j=1}^{p}\beta_j^{2} \quad=\quad \sum_{i=1}^{n}\left( y_i - \beta_0 - \sum_{j=1}^{p}\beta_j x_{ij} \right)^2 + \lambda \sum_{j=1}^{p}\beta_j^{2}$$
 
 - **L2** penalty = sum of **squared** coefficients $\sum \beta_j^2$.
 - **λ (lambda) = tuning parameter**: how hard to penalize complexity.
@@ -514,7 +514,7 @@ $$\underbrace{\sum_{i=1}^{n}\left( y_i - \beta_0 - \sum_{j=1}^{p}\beta_j x_{ij} 
 
 Same idea but penalty uses **absolute values** instead of squares:
 
-$$\sum_{i=1}^{n}\left( y_i - \beta_0 - \sum_{j=1}^{p}\beta_j x_{ij} \right)^2 + \lambda \sum_{j=1}^{p}|\beta_j| \;=\; \text{RSS} + \lambda \sum_{j=1}^{p}|\beta_j|$$
+$$\text{RSS} + \lambda \sum_{j=1}^{p}|\beta_j| \quad=\quad \sum_{i=1}^{n}\left( y_i - \beta_0 - \sum_{j=1}^{p}\beta_j x_{ij} \right)^2 + \lambda \sum_{j=1}^{p}|\beta_j|$$
 
 - **L1** penalty = sum of **absolute** coefficients $\sum |\beta_j|$.
 - Lasso can drive some weights **exactly to zero** → automatically **removes useless features** (feature selection).
