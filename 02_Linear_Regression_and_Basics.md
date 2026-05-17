@@ -236,8 +236,7 @@ This can be written compactly using vectors:
 
 $$\hat{y} = \theta^T X$$
 
-where:
-$$\theta^T = [\theta_0,\ \theta_1,\ \theta_2,\ \dots] \qquad X = \begin{bmatrix} 1 \\ x_1 \\ x_2 \\ \vdots \end{bmatrix}$$
+where $\theta^T = [\theta_0,\ \theta_1,\ \theta_2,\ \dots]$ is a **row** of all the weights, and $X = [1,\ x_1,\ x_2,\ \dots]^T$ is a **column** of the inputs (with a `1` stacked on top).
 
 > 💡 **Why the `1` on top of X?** It pairs with $\theta_0$ so the intercept fits neatly into the same multiplication. $\theta^T X = \theta_0\cdot 1 + \theta_1 x_1 + \theta_2 x_2 + \dots$ — exactly the long form. **The `T` means "transpose"** (turn the column of θ's into a row so it can multiply the column X).
 
@@ -345,7 +344,7 @@ Gives **polynomial regression**: $\phi_0=1,\ \phi_1=x,\ \phi_2=x^2,\ \phi_3=x^3,
 
 #### (b) Gaussian basis — LOCAL
 
-$$\phi_j(x) = \exp\left\{ -\frac{(x - \mu_j)^2}{2s^2} \right\}$$
+$$\phi_j(x) = \exp\left( -\frac{(x - \mu_j)^2}{2s^2} \right)$$
 
 | Symbol | Controls |
 |---|---|
